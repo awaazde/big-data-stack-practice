@@ -10,7 +10,8 @@ Components
 
 Steps
 =====
-1. Install & run docker
+1. Install & run docker,
+2. Setup postgres db,
 2. Clone this repository,
 3. Install the required dependencies & set enviornment variables using **make install** command,
 4. Restart the terminal,
@@ -24,6 +25,14 @@ Commands
 2. To run: **make up**
 3. To stop: **make down**
 
+Environment Variables
+=====================
+    Please note, following env. variables are set during the installation process. They are listed here for reference purpose and not to be set explicitly. 
+1. AWS_REGION,
+2. AWS_ACCESS_KEY_ID,
+3. AWS_SECRET_ACCESS_KEY,
+4. SPARK_HOME,
+5. PYTHONPATH
 
 References
 ==========
