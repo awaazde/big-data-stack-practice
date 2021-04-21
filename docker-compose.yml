@@ -5,7 +5,7 @@ services:
     container_name: database
     image: postgres:12-alpine
     ports:
-      - 5432:5432
+      - 5434:5434
     environment:
       POSTGRES_DB: metastore
       POSTGRES_USER: hive
@@ -30,7 +30,8 @@ services:
     ports:
       - 9083:9083
     volumes:
-      - "./etc/hivemetastore/create-table.hql:/tmp/create-table.hql"
+      - "./etc/hivemetastore/create-table.sql:/tmp/create-table.sql"
+      - "./etc/hivemetastore/update-metadata.sql:/tmp/update-metadata.sql"
     env_file:
       - ./hive.env
     command: hivemetastore
@@ -45,15 +46,15 @@ services:
       MINIO_SECRET_KEY: minio123
     command: server /data
 
-  presto:
-    container_name: presto
-    image: prestosql/presto:333
+  trino:
+    container_name: trino
+    image: trinodb/trino
     ports:
       - 8080:8080
     volumes:
-      - "./etc/presto/config.properties:/lib/presto/default/etc/config.properties"
-      - "./etc/presto/hive.properties:/lib/presto/default/etc/catalog/hive.properties"
-      - "./etc/presto/query-example.sql:/tmp/query-example.sql"
+      #- "./etc/presto/config.properties:/lib/presto/default/etc/config.properties"
+      - "./etc/trino/hive.properties:/etc/trino/catalog/hive.properties"
+      #- "./etc/trino/query-example.sql:/tmp/query-example.sql"
 
 # important to have external network, without `_` underscore symbol, otherwise hive-server will fail
 networks:

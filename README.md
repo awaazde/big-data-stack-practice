@@ -1,89 +1,34 @@
-# Proof of concept 
-Hive meta-store and S3
+About
+=====
+To develop and test Glue scripts in local environment, this package mocks underlying AWS functionalities. 
+To make this application platform independant, core functionalities have been dockerized. 
 
-## How to run 
-```bash
-make up
-```
+Components
+==========
+1. [Hive](https://hive.apache.org/),
+2. [Minio Object storage](https://min.io/) (minio, minio123) Local endpoint: [localhost:9000](http://localhost:9000),
+3. [Trino database](https://trino.io/) (admin, no password) Local endpoint: [localhost:8080](http://localhost:8080),
+4. [AWS glue libs](https://github.com/awslabs/aws-glue-libs)
 
-to stop
-```bash
-make down
-```
+Steps
+=====
+1. Install & run docker
+2. Clone this repository,
+3. Install the required dependencies & set enviornment variables using **make install** command,
+4. Restart the terminal,
+5. Once inside the directory, run **make up**
 
-* Minio (minio, minio123) [localhost:9000](http://localhost:9000)
-* Presto (admin, no password) [localhost:8080](http://localhost:8080)
-## Diagram
-To create tables for test data, I use Option 1 in docker-compose.
-![img](./doc/diagram.png)
-  
-Hive deployment  
+Commands
+============
+1. Installation: **make install**
 
-![img](./doc/hive-metastore.png)
+        Note: After installation, one needs to restart the terminal. This ensures that all the required environment variables are set permanently.
+2. To run: **make up**
+3. To stop: **make down**
 
 
-screen shots
-![img](./doc/presto-query.png)
-
-![img](./doc/presto-ui.png)
-
-## Useful commands (debug)
-### Minio
-```bash
-mc config host add super-puper-config http://localhost:9000 minio minio123
-mc mb super-puper-config/hive
-mc mb super-puper-config/default
-mc cp ./dummy-data/iris.csv super-puper-config/hive/warehouse/iris/iris.csv
-mc cp ./dummy-data/users.csv super-puper-config/hive/warehouse/users/users.csv
-```
-
-### Beeline cli
-Different ways how to connect
-```bash
-# from metastore (loopback) 
-beeline -u jdbc:hive2://
-    
-# from hive-server (to metastore)
-beeline -u "jdbc:hive2://localhost:10000/default;auth=noSasl" -n hive -p hive  
-
-# exec script from file (example)
-beeline -u jdbc:hive2:// -f /tmp/create-table.hql
-```
-SQL
-```
-SHOW DATABASES;
-SHOW TABLES IN <database-name>;
-DROP DATABASE <database-name>;
-```
-Dummy data. table creation on S3 for iris data set (check /dummy-data/iris.csv)
-```sql
-CREATE EXTERNAL TABLE iris (sepal_length DECIMAL, sepal_width DECIMAL, 
-petal_length DECIMAL, petal_width DECIMAL, species STRING) 
-ROW FORMAT DELIMITED 
-FIELDS TERMINATED BY ','
-LINES TERMINATED BY '\n'
-LOCATION 's3a://hive/warehouse/iris/'
-TBLPROPERTIES ("skip.header.line.count"="1");
-```
-
-Dummy data. table creation on S3 for iris data set (check /dummy-data/users.csv)
-```sql
-CREATE EXTERNAL TABLE users (id DECIMAL, name STRING, 
-lastname STRING) 
-ROW FORMAT DELIMITED 
-FIELDS TERMINATED BY ','
-LINES TERMINATED BY '\n'
-LOCATION 's3a://hive/warehouse/users/';
-```
-
-### Presto 
-```bash
-SHOW CATALOGS [ LIKE pattern ]
-SHOW SCHEMAS [ FROM catalog ] [ LIKE pattern ]
-SHOW TABLES [ FROM schema ] [ LIKE pattern ]
-```
-
-Presto does not have proper support for CSV files currently:
-* https://stackoverflow.com/a/56662729 
-* https://coding-stream-of-consciousness.com/2019/06/05/presto-hive-external-table-textfile-limitations/ 
-* https://github.com/prestosql/presto/pull/920#issuecomment-517585649 
+References
+==========
+1. [Mock AWS Athena for your ETL tests](https://towardsdatascience.com/mock-aws-athena-for-your-etl-tests-1f5447261705),
+2. [Big data stack practice](https://github.com/zhenik-poc/big-data-stack-practice)
+3. [Developing and Testing ETL Scripts Locally Using the AWS Glue ETL Library](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-libraries.html#develop-local-python)
