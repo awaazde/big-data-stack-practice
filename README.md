@@ -1,5 +1,4 @@
-About
-=====
+* * *
 To develop and test Glue scripts in local environment, this package mocks underlying AWS functionalities. 
 To make this application platform independant, core functionalities have been dockerized. 
 
