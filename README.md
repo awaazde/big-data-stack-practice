@@ -1,6 +1,13 @@
 To develop and test Glue scripts in local environment, this package mocks underlying AWS functionalities. 
 To make this application platform independant, core functionalities have been dockerized. 
 
+Requirements
+============
+1. Docker,
+2. Postgres,
+3. Java v8,
+4. Python 3
+
 Components
 ==========
 1. [Hive](https://hive.apache.org/),
