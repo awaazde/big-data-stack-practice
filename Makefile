@@ -71,4 +71,4 @@ down:
 	docker-compose down
 	docker network rm hive-test
 
-install: setup-aws-glue-libs setup-apache-maven set-env-variables
+install: setup-aws-glue-libs setup-apache-maven setup-spark-hadoop set-env-variables
