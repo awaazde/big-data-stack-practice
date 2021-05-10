@@ -55,8 +55,8 @@ setup-spark-hadoop:
 set-env-variables:
 ifeq ($(AWS_REGION),)
 	@read -p "Enter absolute path of default shell profile (.zshrc, .bash_profile):" shell_profile && echo $${shell_profile} \
-	&& echo "export PATH=${current_dir}/apache-maven-3.6.0-bin.tar.gz/bin:$$PATH" >> $${shell_profile} \
-	&& echo "export SPARK_HOME=${current_dir}/spark-2.4.3-bin-hadoop2.8" >> $${shell_profile} \
+	&& echo "export PATH=${current_dir}/apache-maven-3.6.0/bin:$$PATH" >> $${shell_profile} \
+	&& echo "export SPARK_HOME=${current_dir}/spark-2.4.3-bin-spark-2.4.3-bin-hadoop2.8" >> $${shell_profile} \
 	&& echo "export AWS_REGION=eu-west-1" >> $${shell_profile} \
 	&& echo "export AWS_ACCESS_KEY_ID=minio" >> $${shell_profile} \
 	&& echo "export AWS_SECRET_ACCESS_KEY=minio123" >> $${shell_profile} \
