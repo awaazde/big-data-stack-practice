@@ -1,0 +1,1 @@
+spark-submit /home/glue_user/workspace/reports/aws/glue/elt/extractload_main.py --end_date 2025-12-17 --start_date 2015-12-10 --base_path s3a://development/ --trigger_type custom --schema_name _local --JOB_NAME ExtractLoad --db_name awaazde --db_username awaazde --db_password awaazde

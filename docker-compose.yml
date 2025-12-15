@@ -1,63 +1,179 @@
-version: "3"
+version: '3.8'
+
 services:
-
-  database:
-    container_name: database
-    image: postgres:12-alpine
-    ports:
-      - 5434:5434
-    environment:
-      POSTGRES_DB: metastore
-      POSTGRES_USER: hive
-      POSTGRES_PASSWORD: hive
-
-  hive-server:
-    container_name: hive-server
-    image: homemade/hive:3.1.0
-    ports:
-      - 10000:10000
-    env_file:
-      - ./hive.env
-    environment:
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
-      HIVE_SITE_CONF_hive_metastore_uris: "thrift://hive-metastore:9083"
-      # https://stackoverflow.com/a/53336873
-      HIVE_SITE_CONF_hive_server2_active_passive_ha_enable: "true"
-
-  hive-metastore:
-    container_name: hive-metastore
-    image: homemade/hive:3.1.0
-    ports:
-      - 9083:9083
-    volumes:
-      - "./etc/hivemetastore/create-table.sql:/tmp/create-table.sql"
-      - "./etc/hivemetastore/update-metadata.sql:/tmp/update-metadata.sql"
-    env_file:
-      - ./hive.env
-    command: hivemetastore
-
   minio:
-    container_name: minio
-    image: minio/minio:RELEASE.2020-04-10T03-34-42Z
+    image: minio/minio
+    container_name: local-minio
     ports:
-      - 9000:9000
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
     environment:
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
-    command: server /data
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    volumes:
+      - minio-data:/data
+    networks:
+      - glue-network
 
   trino:
-    container_name: trino
-    image: trinodb/trino
+    image: trinodb/trino:390
+    container_name: local-trino
     ports:
-      - 8080:8080
+      - "8080:8080"
+    depends_on:
+      - minio
+      - hive-metastore
     volumes:
-      #- "./etc/presto/config.properties:/lib/presto/default/etc/config.properties"
-      - "./etc/trino/hive.properties:/etc/trino/catalog/hive.properties"
-      #- "./etc/trino/query-example.sql:/tmp/query-example.sql"
+      - ./trino/catalog:/etc/trino/catalog
+      - warehouse-data:/data/warehouse
+    environment:
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio123
+      - AWS_REGION=ap-south-1
+    networks:
+      - glue-network
 
-# important to have external network, without `_` underscore symbol, otherwise hive-server will fail
+  hive-metastore:
+    image: apache/hive:3.1.3
+    container_name: hive-metastore
+    depends_on:
+      metastore-db:
+        condition: service_healthy
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: mysql
+      SERVICE_OPTS: "-Xmx1G"
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+      AWS_REGION: ap-south-1
+    ports:
+      - "9083:9083"
+    volumes:
+      - ./hive/conf:/opt/hive/conf
+      - ./hive/lib/mysql-connector-java-8.0.28.jar:/opt/hive/lib/mysql-connector-java-8.0.28.jar
+      - ./hive/lib/hadoop-aws-3.1.0.jar:/opt/hive/lib/hadoop-aws-3.1.0.jar
+      - ./hive/lib/aws-java-sdk-bundle-1.11.271.jar:/opt/hive/lib/aws-java-sdk-bundle-1.11.271.jar
+    networks:
+      - glue-network
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        echo "Initializing Hive schema..."
+        /opt/hive/bin/schematool -dbType mysql -initSchema || echo "Schema may already exist"
+        echo "Starting Hive Metastore..."
+        exec /opt/hive/bin/hive --service metastore
+
+  hive-server:
+    image: apache/hive:3.1.3
+    container_name: hive-server
+    depends_on:
+      - hive-metastore
+    environment:
+      SERVICE_NAME: hiveserver2
+      SERVICE_OPTS: "-Xmx1G"
+      IS_RESUME: "true"
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+      AWS_REGION: ap-south-1
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+    volumes:
+      - ./hive/conf:/opt/hive/conf
+      - ./hive/lib/hadoop-aws-3.1.0.jar:/opt/hive/lib/hadoop-aws-3.1.0.jar
+      - ./hive/lib/aws-java-sdk-bundle-1.11.271.jar:/opt/hive/lib/aws-java-sdk-bundle-1.11.271.jar
+    networks:
+      - glue-network
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /tmp/hive && chmod 777 /tmp/hive
+        /entrypoint.sh
+
+  metastore-db:
+    image: mysql:8.0
+    container_name: metastore-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: metastore
+      MYSQL_USER: hive
+      MYSQL_PASSWORD: hive
+    volumes:
+      - metastore-data:/var/lib/mysql
+    networks:
+      - glue-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    container_name: awaazde-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
+    networks:
+      - glue-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  glue:
+    image: amazon/aws-glue-libs:5
+    container_name: glue-interactive
+    ports:
+      - "4040:4040"
+      - "18080:18080"
+    depends_on:
+      - minio
+      - hive-metastore
+      - postgres
+    volumes:
+      - ./glue-jobs:/home/glue_user/workspace/jobs
+      - ./output:/home/glue_user/workspace/output
+      - ./glue-config/spark-defaults.conf:/home/glue_user/spark/conf/spark-defaults.conf
+      - ./glue-config/hive-site.xml:/home/glue_user/spark/conf/hive-site.xml
+      - ./glue-config/jars/postgresql-42.7.1.jar:/usr/lib/spark/jars/postgresql-42.7.1.jar
+      - ${REPORTS_PATH}:/home/glue_user/workspace/reports
+    environment:
+      - DISABLE_SSL=true
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio123
+      - AWS_REGION=ap-south-1
+      - PYTHONPATH=/home/glue_user/workspace/reports:/home/glue_user/aws-glue-libs/PyGlue.zip:/home/glue_user/spark/python/lib/pyspark.zip:/home/glue_user/spark/python/lib/py4j-0.10.9-src.zip
+      - DISABLE_GLUE_CATALOG=true
+    networks:
+      - glue-network
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash"]
+
 networks:
-  default:
-    external:
-      name: hive-test
+  glue-network:
+    name: glue-network
+    driver: bridge
+
+volumes:
+  minio-data:
+  metastore-data:
+  warehouse-data:
+  postgres-data:
