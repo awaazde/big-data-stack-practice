@@ -23,7 +23,6 @@ export REPORTS_PATH
 
 echo "Updating .env for REPORTS_PATH"
 echo "REPORTS_PATH=$REPORTS_PATH" > .env
-exit
 
 echo "Using reports path: $REPORTS_PATH"
 
