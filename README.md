@@ -24,8 +24,7 @@ This stack provides a complete local big data environment:
 ### Configure Environment Variables
 
 Before starting the stack, you need to configure the `.env` file:
-
-1. **REPORTS_PATH**: Update this to point to your reports directory. You have two options:
+**REPORTS_PATH**: Update this to point to your reports directory.
 
    ```bash
    # In .env file, set to your actual reports path
@@ -444,18 +443,3 @@ Key environment variables (defined in docker-compose.yml):
 - `AWS_REGION=ap-south-1` - AWS region
 - `DISABLE_SSL=true` - Disable SSL for local development
 
-## Next Steps
-
-1. **Upload data to MinIO**: Use `make minio-ui` to create buckets and upload files
-2. **Create tables in Hive**: Use `make glue-shell` to define table schemas
-3. **Query with Trino**: Use `make trino-cli` to query across data sources
-4. **Store results in PostgreSQL**: Use PySpark JDBC to write results
-5. **Build ETL pipelines**: Create PySpark scripts in `glue-jobs/` directory
-
-## Contributing
-
-Feel free to modify configurations, add new services, or enhance the Makefile commands to suit your needs.
-
-## License
-
-This is a development environment setup. Refer to individual component licenses for production use.
