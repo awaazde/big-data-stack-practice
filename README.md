@@ -24,7 +24,8 @@ This stack provides a complete local big data environment:
 ### Configure Environment Variables
 
 Before starting the stack, you need to configure the `.env` file:
-**REPORTS_PATH**: Update this to point to your reports directory.
+
+**REPORTS_PATH**: Create a .env file inside big-data-stack-practice folder. Update REPORTS_PATH in .env to point to your reports directory.
 
    ```bash
    # In .env file, set to your actual reports path
