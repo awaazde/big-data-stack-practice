@@ -94,7 +94,7 @@ health: ## Check health status of all services
 	@curl -s http://localhost:8080/v1/info > /dev/null 2>&1 && echo "  ✓ Live" || echo "  ✗ Not responding"
 	@echo ""
 	@echo "$(BLUE)Hive Metastore:$(NC)"
-	@docker exec -it hive-metastore bash -c "netstat -an | grep 9083" > /dev/null 2>&1 && echo "  ✓ Live" || echo "  ✗ Not responding"
+	@nc -zv localhost 9083 > /dev/null 2>&1 && echo "  ✓ Live" || echo "  ✗ Not responding"
 	@echo ""
 
 ##@ Service Access
