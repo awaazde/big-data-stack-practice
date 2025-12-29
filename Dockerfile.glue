@@ -1,0 +1,12 @@
+FROM amazon/aws-glue-libs:5
+
+# Install timezone data
+USER root
+RUN yum install -y tzdata && yum clean all
+
+# Copy and install Python requirements
+COPY glue-requirements.txt /tmp/glue-requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/glue-requirements.txt && \
+    rm /tmp/glue-requirements.txtd
+
+USER root

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   minio:
     image: minio/minio
@@ -61,10 +59,13 @@ services:
       - -c
       - |
         set -e
+        echo "Waiting 15 seconds for MySQL to be fully ready..."
+        sleep 15
         echo "Initializing Hive schema..."
         /opt/hive/bin/schematool -dbType mysql -initSchema || echo "Schema may already exist"
         echo "Starting Hive Metastore..."
         exec /opt/hive/bin/hive --service metastore
+    restart: unless-stopped
 
   hive-server:
     image: apache/hive:3.1.3
@@ -113,32 +114,11 @@ services:
       timeout: 5s
       retries: 10
 
-  postgres:
-    build:
-      context: ./postgres
-      dockerfile: Dockerfile
-    container_name: awaazde-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
-    networks:
-      - glue-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   glue:
-    image: amazon/aws-glue-libs:5
+    build:
+      context: .
+      dockerfile: Dockerfile.glue
+    image: custom-aws-glue-libs:5
     container_name: glue-interactive
     ports:
       - "4040:4040"
@@ -146,7 +126,8 @@ services:
     depends_on:
       - minio
       - hive-metastore
-      - postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./glue-jobs:/home/glue_user/workspace/jobs
       - ./output:/home/glue_user/workspace/output
@@ -169,11 +150,10 @@ services:
 
 networks:
   glue-network:
+    external: true
     name: glue-network
-    driver: bridge
 
 volumes:
   minio-data:
   metastore-data:
   warehouse-data:
-  postgres-data:
