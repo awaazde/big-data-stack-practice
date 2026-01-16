@@ -1,2 +1,6 @@
 .env
 
+# Downloaded dependencies
+apache-maven-*/
+aws-glue-libs/
+spark-*/

@@ -39,10 +39,19 @@ Before starting the stack, you need to configure the `.env` file:
 
 ## Quick Start
 
+If you are setting up for the first time, run:
+```bash
+make build
+```
+
+Otherwise just run
 ```bash
 # Start the entire stack
 make all-start
+```
 
+Other useful commands
+```bash
 # Check service status
 make status
 

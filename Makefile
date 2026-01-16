@@ -41,6 +41,7 @@ start: network-create ## Start all services (MinIO, Trino, Glue, Hive)
 	@docker exec local-minio mc alias set myminio http://localhost:9000 minio minio123 > /dev/null 2>&1 || true
 	@docker exec local-minio mc mb myminio/datalake > /dev/null 2>&1 || echo "$(YELLOW)[INFO]$(NC) Bucket 'datalake' already exists"
 	@docker exec local-minio mc mb myminio/test > /dev/null 2>&1 || echo "$(YELLOW)[INFO]$(NC) Bucket 'test' already exists"
+	@docker exec local-minio mc mb myminio/development > /dev/null 2>&1 || echo "$(YELLOW)[INFO]$(NC) Bucket 'test' already exists"
 	@echo "$(GREEN)[INFO]$(NC) Services starting up (waiting for Hive to initialize)..."
 	@sleep 10
 	@$(MAKE) --no-print-directory status
